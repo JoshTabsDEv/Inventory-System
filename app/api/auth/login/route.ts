@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
 
     // ✅ Use parameterized query to prevent SQL injection
     const [users]: any[] = await db.execute(
-      'SELECT id, username, password, fullname, role FROM users WHERE username = ?',
+      'SELECT id, username, password FROM users WHERE username = ?',
       [username]
     );
 
