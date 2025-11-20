@@ -171,7 +171,7 @@ export default function InventoryList({ user, onLogout }: InventoryListProps) {
                     <td>
                       {item.price ? (
                         <span style={{ fontWeight: 500, color: 'var(--success)' }}>
-                          ${item.price}
+                          ₱{item.price}
                         </span>
                       ) : (
                         <span style={{ color: 'var(--text-muted)' }}>—</span>
