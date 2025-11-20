@@ -6,6 +6,7 @@ export async function POST(request: NextRequest) {
   try {
     const { username, password } = await request.json();
 
+    // Validate input
     if (!username || !password) {
       return NextResponse.json(
         { error: 'Username and password are required' },
@@ -13,10 +14,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const [users] = await db.execute(
-      'SELECT * FROM users WHERE username = ?',
+    // ✅ Use parameterized query to prevent SQL injection
+    const [users]: any[] = await db.execute(
+      'SELECT id, username, password, fullname, role FROM users WHERE username = ?',
       [username]
-    ) as any[];
+    );
 
     if (users.length === 0) {
       return NextResponse.json(
@@ -26,8 +28,9 @@ export async function POST(request: NextRequest) {
     }
 
     const user = users[0];
-    const isValidPassword = verifyPassword(password, user.password);
 
+    // ✅ Verify password with bcrypt (never store or compare plaintext!)
+    const isValidPassword = await verifyPassword(password, user.password);
     if (!isValidPassword) {
       return NextResponse.json(
         { error: 'Invalid credentials' },
@@ -35,27 +38,34 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // ✅ Generate secure JWT token
     const token = generateToken({
       userId: user.id,
-      username: user.username
+      username: user.username,
+     
     });
 
+    // ✅ Send token in HttpOnly cookie (not in response body)
     const response = NextResponse.json({
       message: 'Login successful',
       user: {
         id: user.id,
-        username: user.username
-      }
+        username: user.username,
+        fullname: user.fullname,
+       
+      },
     });
 
     response.cookies.set('token', token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: process.env.NODE_ENV === 'production', // HTTPS only in prod
       sameSite: 'lax',
-      maxAge: 60 * 60 * 24 * 7 // 7 days
+      maxAge: 60 * 60 * 24 * 7, // 7 days
+      path: '/',
     });
 
     return response;
+
   } catch (error) {
     console.error('Login error:', error);
     return NextResponse.json(
